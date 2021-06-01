@@ -1,0 +1,162 @@
+"use strict";
+/*globals $:false */
+/*globals eblast_server_url:false */
+
+var subscribe_email_clear_loading_indicator = function() {
+    $(".loading-indicator-overlay").remove();
+    $(".loading-indicator").remove();
+};
+
+var subscribe_email_ajax_message = function(message, is_error) {
+    var $div = $("div#signup_invitation_email_subscribe_ajax_message").first();
+    $div.html(message);
+    if (is_error) {
+        $div.addClass("error");
+    } else {
+        $div.removeClass("error");
+    }
+    $div.show();
+};
+
+var subscribe_focus_email = function() {
+    var $input = $('input[name="email_address"]');
+    try {
+        $input[0].focus();
+    } catch (err) {
+        return false;
+    }
+};
+
+var subscribe_email_reveal_subscriber_success = function() {
+    $("#signup_invitation_email_subscribe_form").slideUp("fast");
+    $("#signup_invitation_email_subscribe_success").slideDown();
+};
+
+var subscribe_email_reveal_subscriber_exists = function() {
+    $("#signup_invitation_email_subscribe_form").slideUp("fast");
+    $("#signup_invitation_email_subscribe_existing").slideDown();
+};
+
+var subscribe_submit_email = function(
+    email,
+    site_id,
+    confirm,
+    first_name,
+    last_name
+) {
+    if (!confirm) {
+        confirm = false;
+    }
+    var url = eblast_server_url + "/v1/add_email";
+
+    var data = {
+        email: email,
+        site_id: site_id,
+        first_name: first_name,
+        last_name: last_name,
+        confirmed: confirm
+    };
+
+    var createCookie = function(name, value, days) {
+        var expires;
+
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+            expires = "; expires=" + date.toGMTString();
+        } else {
+            expires = "";
+        }
+        document.cookie =
+            encodeURIComponent(name) +
+            "=" +
+            encodeURIComponent(value) +
+            expires +
+            "; path=/";
+    };
+
+    $.post(
+        url,
+        data,
+        function(data, textStatus, jqXHR) {
+            subscribe_email_clear_loading_indicator();
+
+            if (data.success === false) {
+                if (data.errors && data.errors.length > 0) {
+                    var msg = data.errors.join(" ");
+                    subscribe_email_ajax_message(msg, true);
+                }
+
+                if (data.confirmation_needed === true) {
+                    var confirm_pop = window.confirm(data.confirmation_message);
+                    if (confirm_pop === true) {
+                        $("#subscribe-email").showLoading();
+                        return subscribe_submit_email(email, site_id, true);
+                    } else {
+                        subscribe_focus_email();
+                    }
+                }
+
+                if (
+                    data.errors.length === 0 &&
+                    data.confirmation_needed === false
+                ) {
+                    subscribe_email_ajax_message(
+                        "An unknown error occurred",
+                        true
+                    );
+                }
+            }
+
+            if (data.success === true) {
+                var subscription_exists = data.results.subscription_exists;
+                var subscriber_exists = data.results.subscriber_exists;
+
+                if (subscriber_exists && subscription_exists) {
+                    subscribe_email_reveal_subscriber_exists();
+                } else {
+                    subscribe_email_reveal_subscriber_success();
+                }
+
+                // Set cookie:
+                createCookie("signup_invitation_subscribed", "subscribed", {
+                    expires: 365 * 5,
+                    path: "/"
+                });
+            }
+        },
+        "json"
+    );
+};
+
+$(function() {
+    var $subscribe_form = $("#signup_invitation_email_subscribe_form form");
+
+    $subscribe_form.submit(function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        $("#signup_invitation_email_subscribe").showLoading();
+
+        var email = $(this)
+            .find('input[name="email_address"]')
+            .val();
+        var location_id = $(this)
+            .find('input[name="location_id"]')
+            .val();
+        var first_name = $(this)
+            .find('input[name="first_name"]')
+            .val();
+        var last_name = $(this)
+            .find('input[name="last_name"]')
+            .val();
+
+        subscribe_submit_email(
+            email,
+            location_id,
+            false,
+            first_name,
+            last_name
+        );
+    });
+});

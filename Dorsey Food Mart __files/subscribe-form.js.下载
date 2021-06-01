@@ -1,0 +1,23 @@
+"use strict";
+/*globals $:false */
+
+$(document).ready(function() {
+
+    var form_validation_rules = {//as defined in jquery.validate.js
+        //debug: true,
+        ignore: ".ignore", //be sure to hit hidden
+        rules: {
+            "email_address" : {
+                required: true,
+                email: true
+            }
+        },
+        messages: {
+            "email_address" : {
+                required: "Please enter an email address"
+            }
+        }
+    };
+
+    $("#signup_invitation_email_subscribe_form form").validate(form_validation_rules);
+});

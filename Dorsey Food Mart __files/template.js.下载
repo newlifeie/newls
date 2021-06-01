@@ -1,0 +1,109 @@
+"use strict";
+
+(function(window, $) {
+  var page_wrap_selector = "#pageContainer";
+  var page_content_selector = "#pageContent";
+  var footer_selector = "footer";
+  var top_header_selector = "#topHeader";
+  var logo_selector = "#pageHeader .logo";
+
+  // function to call only once, after the events have finished:
+  var waitForFinalEvent = (function() {
+    var timers = {};
+    return function(callback, ms, uniqueId) {
+      if (timers[uniqueId]) {
+        window.clearTimeout(timers[uniqueId]);
+      }
+      timers[uniqueId] = window.setTimeout(callback, ms);
+    };
+  })();
+
+  $(document).ready(function() {
+    var $page_wrap = $(page_wrap_selector);
+    var $page_content = $(page_content_selector);
+    var $footer = $(footer_selector);
+    var $top_header = $(top_header_selector);
+    var $logo = $(logo_selector);
+
+    var page_wrap_height_func = function() {
+      return (
+        $page_wrap.outerHeight() -
+        parseInt($page_content.css("padding-bottom")) +
+        parseInt($("body").css("padding-top"))
+      );
+    };
+
+    var height_exclude = function() {
+      //return $footer.outerHeight() - $top_header.height();
+      return $footer.outerHeight() + $("#pageContainerSpacer").height();
+    };
+
+    var page_wrap_height_diff = function(window_height, page_wrap_height) {
+      return window_height - page_wrap_height - height_exclude();
+    };
+
+    //if content does not fill the page, adjust the height so that it does
+    // adds to #page_wrap padding-bottom to fill out page:
+    var resize_page_wrap = function() {
+      var page_wrap_height = page_wrap_height_func();
+      if ($(window).height() > page_wrap_height) {
+        var add_height = page_wrap_height_diff(
+          $(window).height(),
+          page_wrap_height
+        );
+        $page_content.css("padding-bottom", add_height);
+      }
+    };
+
+    var space_top_header = function() {
+      $("body").css("padding-top", $top_header.height() + "px");
+    };
+
+    var check_logo_ratio = function() {
+      // if width is 100%, assume that height might be stretched
+      if ($logo.width() === $logo.parents(".page-header-left").width()) {
+        // unset the height:
+        $logo.css("width", "100%");
+        $logo.css("height", "auto");
+
+        // also can reset page-header-right
+        $logo
+          .parents(".page-header-left")
+          .siblings(".page-header-right")
+          .css(
+            "min-height",
+            $logo.parents(".page-header-left").height() + "px"
+          );
+      }
+    };
+
+    var resize_page = function() {
+      resize_page_wrap();
+      space_top_header();
+      check_logo_ratio();
+    };
+
+    // on page load:
+    resize_page();
+
+    // resize again if windor is resized
+    $(window).resize(function() {
+      waitForFinalEvent(resize_page, 500, "page_wrap_resizing");
+    });
+
+    check_logo_ratio();
+    $logo.load(function() {
+      check_logo_ratio();
+    });
+
+    var $first_slide = $(".swiper-slide img").first();
+    $first_slide.load(function() {
+      resize_page();
+    });
+  });
+})(window, jQuery);
+
+// this nullifies functions from template-storeapp/ja/template.js
+function isIOSIframe() {
+  return false;
+}

@@ -1,0 +1,29 @@
+"use strict";
+/*globals $:false */
+
+$(document).ready(function() {
+
+    $.validator.addMethod( "phoneUS", function( phone_number, element ) {
+        phone_number = phone_number.replace( /\s+/g, "" );
+        return this.optional( element ) || phone_number.length > 9 &&
+            phone_number.match( /^(\+?1-?)?(\([2-9]([02-9]\d|1[02-9])\)|[2-9]([02-9]\d|1[02-9]))-?[2-9]([02-9]\d|1[02-9])-?\d{4}$/ );
+    }, "Please enter a valid phone number" );
+
+    var form_validation_rules = {//as defined in jquery.validate.js
+        //debug: true,
+        ignore: ".ignore", //be sure to hit hidden
+        rules: {
+            "mobile_number" : {
+                required: true,
+                phoneUS: true
+            }
+        },
+        messages: {
+            "mobile_number" : {
+                required: "Please enter a phone number"
+            }
+        }
+    };
+
+    $("#signup_invitation_text_alerts_subscribe_form form").validate(form_validation_rules);
+});

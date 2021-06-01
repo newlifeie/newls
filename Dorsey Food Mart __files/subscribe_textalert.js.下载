@@ -1,0 +1,104 @@
+"use strict";
+/*globals $:false */
+
+var subscribe_textalert_clear_loading_indicator = function() {
+    $(".loading-indicator-overlay").remove();
+    $(".loading-indicator").remove();
+};
+
+var subscribe_textalert_ajax_message = function(message, is_error) {
+    var $div = $(
+        "div#signup_invitation_text_alerts_subscribe_ajax_message"
+    ).first();
+    $div.html(message);
+    if (is_error) {
+        $div.addClass("error");
+    } else {
+        $div.removeClass("error");
+    }
+    $div.show();
+};
+
+var subscribe_focus_mobile_number = function() {
+    var $input = $('input[name="mobile_number"]');
+    try {
+        $input[0].focus();
+    } catch (err) {
+        return false;
+    }
+};
+
+var subscribe_textalert_reveal_success = function() {
+    $("#signup_invitation_text_alerts_subscribe_form").slideUp("fast");
+    $("#signup_invitation_text_alerts_subscribe_success").slideDown();
+};
+
+var subscribe_textalert = function(mobile_number, first_name, last_name) {
+    $.ajaxSetup({
+        headers: {
+            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+        }
+    });
+
+    var url = "/subscribe_text_alerts";
+    var data = {
+        mobile_number: mobile_number,
+        first_name: first_name,
+        last_name: last_name
+    };
+
+    $.post(
+        url,
+        data,
+        function(data, textStatus, jqXHR) {
+            subscribe_textalert_clear_loading_indicator();
+
+            if (data.success === false) {
+                if (data.errors && data.errors.length > 0) {
+                    var msg = data.errors.join(" ");
+                    subscribe_textalert_ajax_message(msg, true);
+                }
+
+                if (
+                    data.errors.length === 0 &&
+                    data.confirmation_needed === false
+                ) {
+                    subscribe_textalert_ajax_message(
+                        "An unknown error occurred",
+                        true
+                    );
+                }
+            }
+
+            if (data.success === true) {
+                subscribe_textalert_reveal_success();
+            }
+        },
+        "json"
+    );
+};
+
+$(function() {
+    var $subscribe_textalert_form = $(
+        "#signup_invitation_text_alerts_subscribe_form form"
+    );
+
+    $subscribe_textalert_form.submit(function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        $("#signup_invitation_text_alerts_subscribe").showLoading();
+
+        var mobile_number = $(this)
+            .find('input[name="mobile_number"]')
+            .val();
+        var first_name = $("#signup-invitation")
+            .find('input[name="first_name"]')
+            .val();
+        var last_name = $("#signup-invitation")
+            .find('input[name="last_name"]')
+            .val();
+
+        subscribe_textalert(mobile_number, first_name, last_name);
+    });
+});

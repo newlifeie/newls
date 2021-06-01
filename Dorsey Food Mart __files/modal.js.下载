@@ -1,0 +1,64 @@
+'use strict';
+/*globals $:false */
+
+function signup_invitation_show_modal(timeout) {
+    setTimeout(function() {
+        $('#signup-invitation').modal({
+            show: true,
+            backdrop: 'static'
+        });
+    }, timeout);
+}
+
+function scrollStop ( callback ) {
+
+    // Make sure a valid callback was provided
+    if ( !callback || Object.prototype.toString.call( callback ) !== '[object Function]' ) return;
+
+    // Setup scrolling variable
+    var isScrolling;
+
+    // Listen for scroll events
+    window.addEventListener('scroll', function ( event ) {
+
+        // Clear our timeout throughout the scroll
+        window.clearTimeout( isScrolling );
+
+        // Set a timeout to run after scrolling ends
+        isScrolling = setTimeout(function() {
+
+            // Run the callback
+            callback();
+
+        }, 66);
+
+    }, false);
+
+}
+
+// hide any loading indicators on close
+$('#signup-invitation').on('hidden.bs.modal', function (e) {
+    $('.loading-indicator-overlay').remove();
+    $('.loading-indicator').remove();
+});
+
+/**
+ * Vertically center Bootstrap 3 modals so they aren't always stuck at the top
+ */
+$(function() {
+    function reposition() {
+        var modal  = $(this);
+        var dialog = modal.find('.modal-dialog');
+        modal.css('display', 'block');
+
+        // Dividing by two centers the modal exactly, but dividing by three
+        // or four works better for larger screens.
+        dialog.css('margin-top', Math.max(0, ($(window).height() - dialog.height()) / 2));
+    }
+    // Reposition when a modal is shown
+    $('.modal').on('show.bs.modal', reposition);
+    // Reposition when the window is resized
+    $(window).on('resize', function() {
+        $('.modal:visible').each(reposition);
+    });
+});
